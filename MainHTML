@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Firework Display</title>
+    <style>
+        .FireWork {
+            position: relative;
+            left: 0px;
+            top: 10px;
+            border: 5px black solid;
+            border-radius: 10px;
+            width: 300px;
+            height: 0px;
+            display: none;
+        }
+
+        .FWC {
+            width: 1%;
+            height: 1px;
+        }
+
+        canvas {
+            display: none;
+            background-color: black;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="FireWork" id="fwA">
+        <p style="text-align: center;" class="FWSC">Firework 1</p>
+        <p>Firework Settings</p>
+        <a>Color:
+            <a style="background-color: rgb(218, 165, 32); color: goldenrod; cursor: pointer;" onclick="EditFirework('color', '218, 165, 32', this)">Colour</a>
+            <a style="background-color: rgb(94, 48, 94); color: rgb(94, 48, 94); cursor: pointer;" onclick="EditFirework('color', '94, 48, 94', this)">Colour</a>
+            <a>Custom:</a><input type="color" onchange="EditFirework('color', this.value, this)">
+        </a>
+        <p></p>
+        <a>Shape:
+            <a style="background-color: goldenrod; color: rgb(94, 48, 94); border-radius: 1px; cursor: pointer;" onclick="EditFirework('shape', 'Circle', this)"><b>Circle</b></a>
+            <a style="background-color: rgb(94, 48, 94); color: goldenrod; border-radius: 1px; cursor: pointer;" onclick="EditFirework('shape', 'Star', this)"><b>Star</b></a>
+        </a>
+        <p></p>
+        <a>Delay:
+            <input type="number" onchange="EditFirework('delay', this.value, this)">Ms
+        </a>
+        <p></p>
+        <a>X-position
+            <input type="range" oninput="EditFirework('xPosition', this.value, this)">
+        </a>
+    </div>
+    <div id="FireworkContainer" class="FWC"></div>
+
+    <canvas id="fireworkCanvas"></canvas>
+
+    <button id="newFireworkBtn" onclick="Newfirework()">New Firework</button>
+    <button id="playFireworkBtn" onclick="PlayFireworks()">Play Fireworks</button>
+    <button id="stopFireworkBtn" onclick="StopFireworks()" style="display: none;">Stop Fireworks</button>
+
+    <script>
+        const FireworkA = document.getElementById("fwA");
+        const FWC = document.getElementById("FireworkContainer");
+        const canvas = document.getElementById("fireworkCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const newFireworkBtn = document.getElementById("newFireworkBtn");
+        const playFireworkBtn = document.getElementById("playFireworkBtn");
+        const stopFireworkBtn = document.getElementById("stopFireworkBtn");
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let FireWorkCount = 0;
+        let FireworkData = {};
+        let playingFireworks = false;
+        let activeAnimations = [];
+
+        function Newfirework() {
+            FireWorkCount += 1;
+            var NFW = FireworkA.cloneNode(true); /* NFW = newfirework */
+            FWC.appendChild(NFW);
+            NFW.style.left = "30px";
+            NFW.style.top = "100px";
+            NFW.style.display = "block";
+            NFW.style.height = "230px";
+            NFW.querySelector(".FWSC").innerHTML = "Firework" + FireWorkCount;
+
+            const fireworkId = "F" + FireWorkCount;
+            NFW.setAttribute("data-id", fireworkId);
+            FireworkData[fireworkId] = {
+                color: "218, 165, 32",
+                shape: "Circle",
+                delay: "0",
+                xPosition: "50%"
+            };
+
+            console.log(FireworkData);
+        }
+
+        function EditFirework(property, value, element) {
+            const fireworkElement = element.closest(".FireWork");
+            const fireworkId = fireworkElement.getAttribute("data-id");
+
+            if (fireworkId && FireworkData[fireworkId]) {
+                FireworkData[fireworkId][property] = value;
+            }
+        }
+
+        function PlayFireworks() {
+            if (playingFireworks) return;
+
+            playingFireworks = true;
+
+            // Hide settings and buttons
+            FWC.style.display = "none";
+            newFireworkBtn.style.display = "none";
+            playFireworkBtn.style.display = "none";
+            stopFireworkBtn.style.display = "block";
+
+            // Show canvas
+            canvas.style.display = "block";
+
+            const maxDelay = Math.max(...Object.values(FireworkData).map(f => parseInt(f.delay)));
+
+            Object.keys(FireworkData).forEach((fireworkId) => {
+                const { color, shape, delay, xPosition } = FireworkData[fireworkId];
+
+                const animation = setTimeout(() => {
+                    launchFirework(fireworkId, color, shape, xPosition);
+                }, delay);
+
+                activeAnimations.push(animation);
+            });
+
+            // Allow replay after the fireworks finish
+            setTimeout(() => {
+                StopFireworks();
+            }, maxDelay + 3000);
+        }
+
+        function StopFireworks() {
+            playingFireworks = false;
+
+            // Show settings and buttons
+            FWC.style.display = "block";
+            newFireworkBtn.style.display = "block";
+            playFireworkBtn.style.display = "block";
+            stopFireworkBtn.style.display = "none";
+
+            // Hide canvas and clear
+            canvas.style.display = "none";
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Clear all timeouts
+            activeAnimations.forEach(animation => clearTimeout(animation));
+            activeAnimations = [];
+        }
+
+        function launchFirework(fireworkId, color, shape, xPosition) {
+            const x = (parseInt(xPosition) / 100) * canvas.width;
+            const y = canvas.height - 100;
+
+            const square = { x, y, size: 20, exploded: false, fireworkId };
+
+            function drawSquare() {
+                if (!square.exploded) {
+                    ctx.fillStyle = `rgb(${color})`;
+                    ctx.fillRect(square.x, square.y, square.size, square.size);
+                }
+            }
+
+            function explode() {
+                square.exploded = true;
+                createCircles(x + square.size / 2, square.y, color, shape);
+            }
+
+            function animateSquare() {
+                if (!square.exploded) {
+                    ctx.clearRect(square.x - 10, square.y - 10, square.size + 20, square.size + 20);
+                    drawSquare();
+                    square.y -= 4;
+                    if (square.y < canvas.height * 0.3) {
+                        explode();
+                    } else {
+                        requestAnimationFrame(animateSquare);
+                    }
+                }
+            }
+
+            animateSquare();
+        }
+
+        function createCircles(x, y, color, shape) {
+    const circles = [];
+    const circleCount = shape === "Circle" ? 20 : 10;
+
+    for (let i = 0; i < circleCount; i++) {
+        const angle = (Math.PI * 2 / circleCount) * i;
+        const speed = Math.random() * 2 + 1;
+        const radius = Math.random() * 3 + 2;
+        circles.push({
+            x,
+            y,
+            radius,
+            angle,
+            speed,
+            opacity: 1,
+        });
+    }
+
+    const explosionStart = Date.now();
+
+    function drawCircles() {
+        const elapsed = Date.now() - explosionStart;
+
+        if (elapsed > 2000) {
+            // Stop rendering after 2 seconds
+            return;
+        }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        circles.forEach((circle) => {
+            if (circle.opacity > 0) {
+                ctx.beginPath();
+                ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${color}, ${circle.opacity})`;
+                ctx.fill();
+                ctx.closePath();
+
+                circle.x += Math.cos(circle.angle) * circle.speed;
+                circle.y += Math.sin(circle.angle) * circle.speed;
+                circle.opacity -= 0.02; // Fade out the particle
+            }
+        });
+
+        requestAnimationFrame(drawCircles);
+    }
+
+    drawCircles();
+}
+
+    </script>
+</body>
+
+</html>
