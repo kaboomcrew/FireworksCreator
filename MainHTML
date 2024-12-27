@@ -7,30 +7,107 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Firework Display</title>
     <style>
+        body {
+            background: rgb(100,63,251);
+            background: radial-gradient(circle, rgba(100,63,251,1) 0%, rgba(236,237,9,1) 100%);
+        }
+            
         .FireWork {
             position: relative;
             left: 0px;
             top: 10px;
             border: 5px black solid;
-            border-radius: 10px;
+            border-radius: 20px;
             width: 300px;
             height: 0px;
             display: none;
+            font-family:  system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: white;
         }
 
         .FWC {
-            width: 1%;
-            height: 1px;
+            display: flex;
+            flex-wrap: wrap; /* Allow wrapping to the next line */
+            gap: 10px; /* Space between fireworks */
+            justify-content: flex-start; /* Align items to the start of the line */
+            padding: 10px;
+            box-sizing: border-box;
+            max-width: 100%;
+            visibility: visible; /* Ensure visibility when exiting display mode */
         }
 
         canvas {
             display: none;
             background-color: black;
         }
+        .TopSec {
+            height: 100px;
+            width: 90%;
+            background-color: #007fe0;
+            border-radius: 50px;
+            border:black solid 5px ;
+            flex-wrap: wrap; /* Allow wrapping to the next line */
+            gap: 10px; /* Space between fireworks */
+            justify-content: flex-start; /* Align items to the start of the line */
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .BA {
+            background-color: #8d3ca3;
+            border: solid black 5px;
+            width: 25%;
+            height: 75px;
+            border-radius: 25px;
+            color: white;
+            font-family:  system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            font-size: 20px;
+        }
+        .BB {
+            background-color: #edd72f;
+            border: solid black 5px;
+            width: 25%;
+            height: 75px;
+            border-radius: 25px;
+            color: white;
+            font-family:  system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            font-size: 20px;
+        }
+        .MiddleSec {
+            height: auto;
+            width: 90%;
+            background-color: #007fe0;
+            border-radius: 50px;
+            border:black solid 5px ;
+            flex-wrap: wrap; /* Allow wrapping to the next line */
+            gap: 10px; /* Space between fireworks */
+            justify-content: flex-start; /* Align items to the start of the line */
+            padding: 10px;
+            box-sizing: border-box;
+            
+        }
+        .TEXT {
+            border: black 5px solid;
+            border-radius: 25px;
+        }
     </style>
 </head>
 
 <body>
+    <center>
+        <section id="SA" class="TopSec">
+            <button class="BA" id="newFireworkBtn" onclick="Newfirework()">New Firework</button>
+            <button class="BB" id="playFireworkBtn" onclick="PlayFireworks()">Play Fireworks</button>
+            <button class="BB" id="stopFireworkBtn" onclick="StopFireworks()" style="display: none;">Stop Fireworks</button>
+        </section>
+        <br> <br>
+        <section id="SB" class="MiddleSec">
+            <button class="BB" id="saveFireworksBtn" onclick="saveFireworks()">Save Fireworks</button>
+            <button class="BA" id="loadFireworksBtn" onclick="loadFireworks()">Load Fireworks</button>
+            <textarea class="TEXT" id="fireworkDataInput" placeholder="Paste saved data here..." style="display: none; width: 100%; height: 100px;"></textarea>
+        </section>
+    </center>    
+
+    
     <div class="FireWork" id="fwA">
         <p style="text-align: center;" class="FWSC">Firework 1</p>
         <p>Firework Settings</p>
@@ -53,13 +130,11 @@
             <input type="range" oninput="EditFirework('xPosition', this.value, this)">
         </a>
     </div>
-    <div id="FireworkContainer" class="FWC"></div>
+    <center>
+        <div id="FireworkContainer" class="FWC"></div>
+    </center>
 
     <canvas id="fireworkCanvas"></canvas>
-
-    <button id="newFireworkBtn" onclick="Newfirework()">New Firework</button>
-    <button id="playFireworkBtn" onclick="PlayFireworks()">Play Fireworks</button>
-    <button id="stopFireworkBtn" onclick="StopFireworks()" style="display: none;">Stop Fireworks</button>
 
     <script>
         const FireworkA = document.getElementById("fwA");
@@ -78,10 +153,12 @@
         let FireworkData = {};
         let playingFireworks = false;
         let activeAnimations = [];
+        let activeFireworks = [];
+        let explosionEffects = [];
 
         function Newfirework() {
             FireWorkCount += 1;
-            var NFW = FireworkA.cloneNode(true); /* NFW = newfirework */
+            var NFW = FireworkA.cloneNode(true);
             FWC.appendChild(NFW);
             NFW.style.left = "30px";
             NFW.style.top = "100px";
@@ -112,6 +189,7 @@
 
         function PlayFireworks() {
             if (playingFireworks) return;
+            document.getElementById("SB").style.display = "none";
 
             playingFireworks = true;
 
@@ -124,125 +202,219 @@
             // Show canvas
             canvas.style.display = "block";
 
-            const maxDelay = Math.max(...Object.values(FireworkData).map(f => parseInt(f.delay)));
-
             Object.keys(FireworkData).forEach((fireworkId) => {
                 const { color, shape, delay, xPosition } = FireworkData[fireworkId];
 
                 const animation = setTimeout(() => {
                     launchFirework(fireworkId, color, shape, xPosition);
-                }, delay);
+                }, parseInt(delay));
 
                 activeAnimations.push(animation);
             });
 
-            // Allow replay after the fireworks finish
-            setTimeout(() => {
-                StopFireworks();
-            }, maxDelay + 3000);
-        }
-
-        function StopFireworks() {
-            playingFireworks = false;
-
-            // Show settings and buttons
-            FWC.style.display = "block";
-            newFireworkBtn.style.display = "block";
-            playFireworkBtn.style.display = "block";
-            stopFireworkBtn.style.display = "none";
-
-            // Hide canvas and clear
-            canvas.style.display = "none";
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Clear all timeouts
-            activeAnimations.forEach(animation => clearTimeout(animation));
-            activeAnimations = [];
+            requestAnimationFrame(animateFireworks);
         }
 
         function launchFirework(fireworkId, color, shape, xPosition) {
             const x = (parseInt(xPosition) / 100) * canvas.width;
             const y = canvas.height - 100;
 
-            const square = { x, y, size: 20, exploded: false, fireworkId };
+            activeFireworks.push({
+                x,
+                y,
+                size: 20,
+                exploded: false,
+                color,
+                shape,
+            });
+        }
 
-            function drawSquare() {
-                if (!square.exploded) {
-                    ctx.fillStyle = `rgb(${color})`;
-                    ctx.fillRect(square.x, square.y, square.size, square.size);
-                }
-            }
+        function animateFireworks() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            function explode() {
-                square.exploded = true;
-                createCircles(x + square.size / 2, square.y, color, shape);
-            }
+            activeFireworks.forEach((firework) => {
+                if (!firework.exploded) {
+                    ctx.fillStyle = `rgb(${firework.color})`;
+                    ctx.fillRect(firework.x, firework.y, firework.size, firework.size);
 
-            function animateSquare() {
-                if (!square.exploded) {
-                    ctx.clearRect(square.x - 10, square.y - 10, square.size + 20, square.size + 20);
-                    drawSquare();
-                    square.y -= 4;
-                    if (square.y < canvas.height * 0.3) {
-                        explode();
-                    } else {
-                        requestAnimationFrame(animateSquare);
+                    firework.y -= 4;
+
+                    if (firework.y < canvas.height * 0.3) {
+                        firework.exploded = true;
+                        createCircles(firework.x + firework.size / 2, firework.y, firework.color, firework.shape);
                     }
                 }
-            }
+            });
 
-            animateSquare();
+            activeFireworks = activeFireworks.filter(fw => !fw.exploded);
+
+            explosionEffects.forEach((effect) => {
+                effect.draw();
+            });
+
+            explosionEffects = explosionEffects.filter(effect => !effect.isComplete());
+
+            if (activeFireworks.length > 0 || explosionEffects.length > 0) {
+                requestAnimationFrame(animateFireworks);
+            }
         }
 
         function createCircles(x, y, color, shape) {
-    const circles = [];
-    const circleCount = shape === "Circle" ? 20 : 10;
+            const circles = [];
+            const circleCount = shape === "Circle" ? 20 : 10;
 
-    for (let i = 0; i < circleCount; i++) {
-        const angle = (Math.PI * 2 / circleCount) * i;
-        const speed = Math.random() * 2 + 1;
-        const radius = Math.random() * 3 + 2;
-        circles.push({
-            x,
-            y,
-            radius,
-            angle,
-            speed,
-            opacity: 1,
-        });
-    }
+            for (let i = 0; i < circleCount; i++) {
+                const angle = (Math.PI * 2 / circleCount) * i;
+                const speed = Math.random() * 2 + 1;
+                const radius = Math.random() * 3 + 2;
+                circles.push({
+                    x,
+                    y,
+                    radius,
+                    angle,
+                    speed,
+                    opacity: 1,
+                });
+            }
 
-    const explosionStart = Date.now();
+            const explosion = {
+                circles,
+                draw() {
+                    this.circles.forEach((circle) => {
+                        if (circle.opacity > 0) {
+                            ctx.beginPath();
+                            ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
+                            ctx.fillStyle = `rgba(${color}, ${circle.opacity})`;
+                            ctx.fill();
+                            ctx.closePath();
 
-    function drawCircles() {
-        const elapsed = Date.now() - explosionStart;
+                            circle.x += Math.cos(circle.angle) * circle.speed;
+                            circle.y += Math.sin(circle.angle) * circle.speed;
+                            circle.opacity -= 0.02;
+                        }
+                    });
+                },
+                isComplete() {
+                    return this.circles.every(circle => circle.opacity <= 0);
+                },
+            };
 
-        if (elapsed > 2000) {
-            // Stop rendering after 2 seconds
-            return;
+            explosionEffects.push(explosion);
         }
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        function StopFireworks() {
+            playingFireworks = false;
+        
+            // Show settings and buttons
+            FWC.style.display = "flex"; // Restore the flex display for proper alignment
+            newFireworkBtn.style.display = "block";
+            playFireworkBtn.style.display = "block";
+            stopFireworkBtn.style.display = "none";
+            document.getElementById("SB").style.display = "block";
+        
+            // Hide canvas and clear
+            canvas.style.display = "none";
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+            // Clear all timeouts
+            activeAnimations.forEach(animation => clearTimeout(animation));
+            activeAnimations = [];
+        }
 
-        circles.forEach((circle) => {
-            if (circle.opacity > 0) {
-                ctx.beginPath();
-                ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(${color}, ${circle.opacity})`;
-                ctx.fill();
-                ctx.closePath();
+        function rgbToHex(rgb) {
+            const [r, g, b] = rgb.split(",").map((v) => parseInt(v.trim()));
+            return ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
 
-                circle.x += Math.cos(circle.angle) * circle.speed;
-                circle.y += Math.sin(circle.angle) * circle.speed;
-                circle.opacity -= 0.02; // Fade out the particle
+
+        
+        function saveFireworks() {
+            // Convert FireworkData to JSON
+            const fireworkDataJSON = JSON.stringify(FireworkData, null, 2);
+        
+            // Display the JSON in a textarea for copying
+            const textArea = document.getElementById("fireworkDataInput");
+            textArea.style.display = "block";
+            textArea.value = fireworkDataJSON;
+            textArea.select();
+            document.execCommand("copy"); // Automatically copy the JSON to clipboard
+        
+            alert("Fireworks saved! Data has been copied to the clipboard.");
+        }
+        
+        function loadFireworks() {
+            const textArea = document.getElementById("fireworkDataInput");
+        
+            // Check if textarea contains data
+            if (textArea.value.trim() === "") {
+                alert("Please paste the saved firework data into the textarea.");
+                textArea.style.display = "block";
+                return;
             }
-        });
+        
+            try {
+                // Parse the JSON from the textarea
+                const parsedData = JSON.parse(textArea.value);
+        
+                // Clear existing fireworks
+                FireworkData = {};
+                FWC.innerHTML = ""; // Clear UI
+        
+                // Repopulate FireworkData and UI
+                Object.keys(parsedData).forEach((fireworkId) => {
+                    FireworkData[fireworkId] = parsedData[fireworkId];
+                    addFireworkToUI(fireworkId, parsedData[fireworkId]);
+                });
+        
+                alert("Fireworks loaded successfully!");
+                textArea.style.display = "none"; // Hide the textarea
+            } catch (error) {
+                alert("Invalid data! Please make sure the pasted data is correct.");
+            }
+        }
+        
+        function addFireworkToUI(fireworkId, fireworkSettings) {
+            // Clone and setup the Firework UI element
+            const NFW = FireworkA.cloneNode(true);
+            FWC.appendChild(NFW);
+            NFW.style.left = "30px";
+            NFW.style.top = "100px";
+            NFW.style.display = "block";
+            NFW.style.height = "230px";
+            NFW.querySelector(".FWSC").innerHTML = fireworkId;
+        
+            NFW.setAttribute("data-id", fireworkId);
+        
+            // Set the properties in the UI from fireworkSettings
+            const { color, shape, delay, xPosition } = fireworkSettings;
+        
+            // Update color selection
+            const customColorInput = NFW.querySelector('input[type="color"]');
+            customColorInput.value = `#${rgbToHex(color)}`;
+        
+            // Update shape selection (highlight correct shape)
+            const shapeButtons = NFW.querySelectorAll("a[onclick*='EditFirework(\"shape\"]");
+            shapeButtons.forEach((btn) => {
+                if (btn.getAttribute("onclick").includes(shape)) {
+                    btn.style.backgroundColor = "goldenrod"; // Highlight selected shape
+                } else {
+                    btn.style.backgroundColor = "rgb(94, 48, 94)"; // Default style for others
+                }
+            });
+        
+            // Update delay input
+            const delayInput = NFW.querySelector('input[type="number"]');
+            delayInput.value = delay;
+        
+            // Update x-position slider
+            const xPositionSlider = NFW.querySelector('input[type="range"]');
+            xPositionSlider.value = xPosition.replace("%", "");
+        
+            // Store settings in FireworkData
+            FireworkData[fireworkId] = fireworkSettings;
+        }
+        
 
-        requestAnimationFrame(drawCircles);
-    }
-
-    drawCircles();
-}
 
     </script>
 </body>
